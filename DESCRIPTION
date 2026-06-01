@@ -1,0 +1,18 @@
+Package: outbreakdistr
+Title: Exact Probability Distributions For Epidemic Models. 
+Version: 0.1.0
+Authors@R: 
+    person("Jonas Christoffer", "Lindstrøm", , "jonaslindstrom88@gmail.com", role = c("aut", "cre"))
+Description: Probability distributions for the size of epidemic outbreaks, using exact computation for stochastic disease spread models.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Imports:
+    Matrix
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr

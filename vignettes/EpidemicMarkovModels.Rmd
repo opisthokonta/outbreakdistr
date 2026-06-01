@@ -1,0 +1,45 @@
+---
+title: "Epidemic Markov Models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{EpidemicMarkovModels}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+```
+
+
+
+Computes the exact probability distribution of the number of susceptibles
+infected during an outbreak, using the embedded discrete-time Markov chain
+of the continuous-time stochastic SIR epidemic. At each step, either one
+susceptible becomes infected or one infective recovers, with probabilities
+proportional to their respective rates. Absorption probabilities are derived
+from the canonical form of the transition matrix.
+
+
+# Epidemic Markov Models
+
+
+## Continuous time models
+
+
+## Discrete time models
+
+
+
+```{r setup}
+library(outbreakdistr)
+
+
+
+
+
+```
