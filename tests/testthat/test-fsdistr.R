@@ -205,6 +205,41 @@ test_that("fsdistr_mt result names encode outcomes correctly", {
 })
 
 
+test_that("fsdistr_mt result marignal distribution matches fsdistr", {
+
+  s0 <- c(3, 1)
+  i0 <- c(1,1)
+
+  s0_tot <- sum(s0)
+  i0_tot <- sum(i0)
+
+
+  beta_coef <- 1.5
+  beta_mat <- beta_coef * matrix(c(1.0, 1.0, 1.0, 1.0), nrow = 2, ncol = 2, byrow = TRUE)
+
+
+  fsdistr_res <- fsdistr(s0 = s0_tot, i0 = i0_tot, beta = 1.5, ip_model = 'constant')
+
+  # Compute mt distribution, then marginalize to get the overall distribution.
+  fsdistr_mt_res <- fsdistr_mt(i0 = i0, s0 = s0, beta = beta_mat, ip_model = 'constant', return_df = TRUE)
+  total_i <- rowSums(fsdistr_mt_res[,-ncol(fsdistr_mt_res), drop=FALSE])
+  fsdistr_mt_res_tot <- sapply(split(x = fsdistr_mt_res$probability, f = total_i), FUN = sum)
+
+  # also compute the mt distributin with reverse ordering of the groups
+  fsdistr_mt_res_rev <- fsdistr_mt(i0 = rev(i0), s0 = rev(s0), beta = beta_mat, ip_model = 'constant', return_df = TRUE)
+  total_i_rev <- rowSums(fsdistr_mt_res_rev[,-ncol(fsdistr_mt_res_rev), drop=FALSE])
+  fsdistr_mt_res_tot_rev <- sapply(split(x = fsdistr_mt_res_rev$probability, f = total_i_rev), FUN = sum)
+
+
+
+  expect_equal(unname(fsdistr_mt_res_tot), fsdistr_res, tolerance = 1e-6)
+  expect_equal(unname(fsdistr_mt_res_tot_rev), fsdistr_res, tolerance = 1e-6)
+
+})
+
+
+
+
 # make_multitype_state_table ----
 # It is important that the ordering of the outcomes made by make_multitype_state_table() is
 # correct and does not change in the future (it relies on the built-in expand.grid function).

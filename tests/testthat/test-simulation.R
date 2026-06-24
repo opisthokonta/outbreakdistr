@@ -9,7 +9,11 @@
 
 # fsdistr() – single-type -----------------------------------------------------
 
+skip_simulations <- FALSE
+
 test_that("fsdistr matches simulation (exponential infectious period)", {
+  skip_if(skip_simulations, message = "Skipping simulations")
+
   skip_on_cran()
 
   i0   <- 2
@@ -41,6 +45,7 @@ test_that("fsdistr matches simulation (exponential infectious period)", {
 
 
 test_that("fsdistr matches simulation (constant infectious period)", {
+  skip_if(skip_simulations, message = "Skipping simulations")
   skip_on_cran()
 
   i0   <- 2
@@ -72,6 +77,7 @@ test_that("fsdistr matches simulation (constant infectious period)", {
 
 
 test_that("fsdistr matches simulation (gamma infectious period)", {
+  skip_if(skip_simulations, message = "Skipping simulations")
   skip_on_cran()
 
   i0   <- 2
@@ -105,6 +111,7 @@ test_that("fsdistr matches simulation (gamma infectious period)", {
 # fsdistr_mt() – multi-type ---------------------------------------------------
 
 test_that("fsdistr_mt matches simulation (3-group, mixed infectious periods)", {
+  skip_if(skip_simulations, message = "Skipping simulations")
   skip_on_cran()
 
   s0 <- c(2, 1, 1)

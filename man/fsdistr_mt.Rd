@@ -4,7 +4,14 @@
 \alias{fsdistr_mt}
 \title{Final size distribution for a multi-type stochastic SIR epidemic}
 \usage{
-fsdistr_mt(s0, i0, beta, ip_model = "exponential", ip_params = list(1))
+fsdistr_mt(
+  s0,
+  i0,
+  beta,
+  ip_model = "exponential",
+  ip_params = list(1),
+  return_df = FALSE
+)
 }
 \arguments{
 \item{s0}{Integer vector of length \code{m}. Initial susceptible counts per
@@ -14,8 +21,8 @@ group.}
 group. At least one element must be >= 1.}
 
 \item{beta}{Numeric matrix of dimension \verb{m x m}. Entry \code{beta[i, j]} is
-the rate at which an infective in group \code{j} contacts susceptibles in
-group \code{i}.}
+the rate at which an infective in group \code{i} contacts susceptibles in
+group \code{j}.}
 
 \item{ip_model}{Character vector of length \code{m} (or scalar, recycled).
 Infectious period model per group: \code{"constant"}, \code{"exponential"}, or

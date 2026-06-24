@@ -80,7 +80,8 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
     length(i0) == 1,
     length(xmax) == 1,
     xmax >= 0,
-    ip_model %in% c("constant", "exponential", "gamma")
+    ip_model %in% c("constant", "exponential", "gamma"),
+    beta >= 0
   )
 
   xmax <- min(s0, xmax)
@@ -172,8 +173,8 @@ fsdistr <- function(s0, i0, beta, ip_model = "exponential", ip_params = 1) {
 #' @param i0 Integer vector of length `m`. Initial infective counts per
 #'   group. At least one element must be >= 1.
 #' @param beta Numeric matrix of dimension `m x m`. Entry `beta[i, j]` is
-#'   the rate at which an infective in group `j` contacts susceptibles in
-#'   group `i`.
+#'   the rate at which an infective in group `i` contacts susceptibles in
+#'   group `j`.
 #' @param ip_model Character vector of length `m` (or scalar, recycled).
 #'   Infectious period model per group: `"constant"`, `"exponential"`, or
 #'   `"gamma"`.
@@ -201,7 +202,7 @@ fsdistr <- function(s0, i0, beta, ip_model = "exponential", ip_params = 1) {
 #'
 #' @export
 fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
-                       ip_params = list(1)) {
+                       ip_params = list(1), return_df = FALSE) {
   m <- length(s0)
 
   if (length(ip_model) == 1) {
@@ -231,9 +232,10 @@ fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
     validate_ip_model_params(model = ip_model[ii], params = ip_params[[ii]])
   }
 
+  s0_tot <- sum(s0)
+
   nstates <- prod(s0 + 1)
   statemat <- make_multitype_state_table(s0)
-  statelabs <- apply(statemat, MARGIN = 1, FUN = \(x) paste(x, collapse = "-"))
 
   stopifnot(nrow(statemat) == nstates)
 
@@ -253,7 +255,7 @@ fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
 
       prod_tmp <- 1
       for (ii in 1:m) {
-        mgf_eval_at <- sum((s0 - cur_state) * (beta[, ii] / s0[ii]))
+        mgf_eval_at <- sum((s0 - cur_state) * (beta[ii, ] / s0_tot))
         mgf_res_tmp <- mgf(
           t = mgf_eval_at,
           params = ip_params[[ii]],
@@ -269,7 +271,15 @@ fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
     probs[jj] <- (yy - sum(probs[jidx] * xxj[jidx])) / xxj[jj]
   }
 
-  names(probs) <- statelabs
+  if(return_df){
+    res <- as.data.frame(cbind(statemat, probs))
+    colnames(res)[1:m] <- sprintf('i%d', 1:m)
+    colnames(res)[m+1] <- 'probability'
+  } else {
+    statelabs <- apply(statemat, MARGIN = 1, FUN = \(x) paste(x, collapse = "-"))
+    names(probs) <- statelabs
+    res <- probs
+  }
 
   if (abs(sum(probs) - 1) > 0.0001) {
     warning("sum not 1")
@@ -278,5 +288,5 @@ fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
     warning("some probability negative")
   }
 
-  return(probs)
+  return(res)
 }
