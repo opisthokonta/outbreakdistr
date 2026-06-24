@@ -12,10 +12,12 @@ numerically unstable for larger groups.
 This package is in early stages of development, functionality and
 interface will probably change substantially.
 
-Currently implemented: - Final Size methods from Ball (1986): Single
-type and multitype populations, with different infectious period
-distributions. - Epidemic Markov Models: Continuous time SIR and SIS
-models, discrete time SIR.
+Currently implemented:
+
+- Final Size methods from Ball (1986): Single type and multitype
+  populations, with different infectious period distributions.
+- Epidemic Markov Models: Continuous time SIR and SIS models, discrete
+  time SIR.
 
 Keywords: Infectious disease modelling, Final size distribution.
 

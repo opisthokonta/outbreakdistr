@@ -16,6 +16,7 @@ such as cities or countries. This is because the methods tend to be slow and num
 This package is in early stages of development, functionality and interface will probably change substantially. 
 
 Currently implemented:
+
 - Final Size methods from Ball (1986): Single type and multitype populations, with different infectious period distributions.
 - Epidemic Markov Models: Continuous time SIR and SIS models, discrete time SIR. 
 
@@ -136,7 +137,6 @@ The [chainbinomial](https://github.com/opisthokonta/chainbinomial) package imple
 
 
 ## References
-
 
 - Ball, Frank (1986) A unified approach to the distribution of total size and total area under the trajectory of infectives in epidemic models
 
