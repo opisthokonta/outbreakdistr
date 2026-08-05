@@ -70,8 +70,7 @@ subset_statemat_idx <- function(statemat, j) {
 
 
 
-# Compute the final size probability distribution (up to xmax infections).
-# Based on Theorem 3.12 in Britton & Pardoux (2019).
+
 fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
   stopifnot(
     s0 > 0,
@@ -81,6 +80,7 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
     length(xmax) == 1,
     xmax >= 0,
     ip_model %in% c("constant", "exponential", "gamma"),
+    is.numeric(beta),
     beta >= 0
   )
 
@@ -97,14 +97,15 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
     }
 
     mgf_res <- mgf(
-      t = ((N - i0 - kk) * (beta / s0)),
+      t = ((beta * (s0 - kk)) / (N-1)),
       params = ip_params,
       model = ip_model
     )
 
-    term1 <- choose(N - i0, kk) * (mgf_res^(kk + i0))
+    term1 <- choose(s0, kk) * (mgf_res^(kk + i0))
+
     ii <- 0:(kk - 1)
-    term2 <- sum(choose(N - i0 - ii, kk - ii) * (mgf_res^(kk - ii)) * probs[ii + 1])
+    term2 <- sum(choose(s0 - ii, kk - ii) * (mgf_res^(kk - ii)) * probs[ii + 1])
     probs[idx] <- term1 - term2
   }
 
@@ -118,6 +119,62 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
   return(probs)
 }
 
+
+# Compute the final size probability distribution (up to xmax infections).
+# Based on Demiris and O'Neill (2006).
+fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
+  stopifnot(
+    s0 > 0,
+    length(s0) == 1,
+    i0 >= 1,
+    length(i0) == 1,
+    length(xmax) == 1,
+    xmax >= 0,
+    ip_model %in% c("constant", "exponential", "gamma"),
+    is.numeric(beta),
+    beta >= 0
+  )
+
+  xmax <- min(s0, xmax)
+  N <- i0 + s0
+  N1 <- N - 1
+  probs <- numeric(xmax + 1)
+
+  for (ll in 0:xmax) {
+    idx <- ll + 1
+
+    mgf_res <- mgf(
+      t = ((beta * (s0 - ll)) / N1) ,
+      params = ip_params,
+      model = ip_model
+    )
+
+    kk <- 0:ll
+    alk <- choose(s0 - kk, ll-kk) / (choose(s0, ll) * (mgf_res^(kk+i0)))
+
+
+    if (ll == 0){
+      sk <- 0
+    } else {
+      sk <- 0
+      for (ii in 1:length(alk)){
+        sk <- sk + (alk[ii]*probs[ii])
+      }
+    }
+
+    probs[idx] <- (1 - sk)/ alk[idx]
+
+  }
+
+  if ((xmax == s0) & (abs(sum(probs) - 1) > 0.0001)) {
+    warning("sum not 1")
+  }
+  if (any(probs < 0)) {
+    warning("some probability negative")
+  }
+
+  return(probs)
+}
 
 #' Final size distribution for a single-type stochastic SIR epidemic
 #'
@@ -139,8 +196,7 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
 #'   s0).
 #'
 #' @references
-#' Britton, T., & Pardoux, E. (Eds.). (2019). *Stochastic Epidemic Models
-#' with Inference*. Springer.
+#' Demiris, N., & O'Neill, P. D. (Eds.). (2006). *Computation of final outcome probabilities for the generalized stochastic epidemic*.
 #'
 #' @examples
 #' # Probability distribution with exponential infectious period
@@ -233,6 +289,7 @@ fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
   }
 
   s0_tot <- sum(s0)
+  i0_tot <- sum(i0)
 
   nstates <- prod(s0 + 1)
   statemat <- make_multitype_state_table(s0)
@@ -255,7 +312,8 @@ fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
 
       prod_tmp <- 1
       for (ii in 1:m) {
-        mgf_eval_at <- sum((s0 - cur_state) * (beta[ii, ] / s0_tot))
+        #mgf_eval_at <- sum((s0 - cur_state) * (beta[ii, ] / s0_tot))
+        mgf_eval_at <- sum((s0 - cur_state) * (beta[ii, ] / (s0_tot + i0_tot - 1)))
         mgf_res_tmp <- mgf(
           t = mgf_eval_at,
           params = ip_params[[ii]],
