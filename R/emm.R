@@ -40,21 +40,23 @@ get_state_table_idx <- function(sm, state) {
 # elements: what kind of transition matrix to return, either "probabilities" or "rates".
 #
 # To obtain the canonical form, pass statemat with absorbing states first.
-make_transition_matrix <- function(statemat, s0, beta, gamma, beta0 = 0, sparse = FALSE, elements = 'probabilities', model = 'sir') {
+make_transition_matrix <- function(statemat, s0, beta, gamma, i0, beta0 = 0, cpi = 0, sparse = FALSE, elements = 'probabilities', model = 'sir') {
 
   if (model == 'sis' & elements == 'probabilities'){
     stop('Model SIS sohuld only be used with elements =  "rates".')
   }
 
-
   state_labels <- apply(statemat, MARGIN = 1, FUN = \(x) paste0(x, collapse = "-"))
 
-  infection_rate <- (beta * statemat[, 1] * (statemat[, 2] / s0)) + (beta0 * statemat[, 1])
+  infection_rate <- (beta * statemat[, 1] * (statemat[, 2] / (s0 + i0 - 1) )) + (beta0 * statemat[, 1])
   recovery_rate <- gamma * statemat[, 2]
 
   if (elements == 'probabilities'){
     infection_probability <- infection_rate / (infection_rate + recovery_rate)
     recovery_probability <- recovery_rate / (infection_rate + recovery_rate)
+
+    # recovery_probability[is.nan(recovery_probability)] <- 0
+    # infection_probability[is.nan(infection_probability)] <- 0
 
     element_infection <- infection_probability
     element_recovery <- recovery_probability
@@ -81,11 +83,11 @@ make_transition_matrix <- function(statemat, s0, beta, gamma, beta0 = 0, sparse 
     next_state_inf_idx <- match(next_state_inf_labels, state_labels)
     next_state_rec_idx <- match(next_state_rec_labels, state_labels)
 
-    absorbing_state <- statemat[, 2] == 0
+    absorbing_state <- statemat[, 2] == 0 #& statemat[,1] != s0
     absorbing_state_idx <- which(absorbing_state)
 
     # Transient states where both infection and recovery are possible.
-    transient_with_s <- (!absorbing_state) & (statemat[, 1] >= 1)
+    transient_with_s <- (!absorbing_state) & (statemat[, 1] >= 1) #& (statemat[, 1] != s0) # TODO: Recovery not possible in state s0-0.
     # Transient states where only recovery is possible.
     transient_without_s <- (!absorbing_state) & (statemat[, 1] == 0)
 
@@ -113,10 +115,13 @@ make_transition_matrix <- function(statemat, s0, beta, gamma, beta0 = 0, sparse 
       element_infection[transient_with_s]
     )
 
+
     transition_matrix <- Matrix::sparseMatrix(
       i = rows, j = cols, x = vals,
       dimnames = list(state_labels, state_labels)
     )
+
+
   } else { # Dense.
 
     transition_matrix <- matrix(
@@ -133,10 +138,9 @@ make_transition_matrix <- function(statemat, s0, beta, gamma, beta0 = 0, sparse 
         cur_state_idx <- ii
 
         if (cur_state[2] == 0) {
-          # Absorbing state: stays in place.
-
-          next_state_idx <- get_state_table_idx(sm = statemat, state = cur_state)
-          transition_matrix[cur_state_idx, next_state_idx] <- absorbing_state_element # TODO: what if beta0 != 0??
+          # Absorbing state: stays in place (if beta0 > 0 & cur_state != s0)
+            next_state_idx <- get_state_table_idx(sm = statemat, state = cur_state)
+            transition_matrix[cur_state_idx, next_state_idx] <- absorbing_state_element
 
         } else if (cur_state[2] > 0 & cur_state[1] > 0) {
           # Infection or recovery both possible.
@@ -186,7 +190,13 @@ make_transition_matrix <- function(statemat, s0, beta, gamma, beta0 = 0, sparse 
     }
   }
 
+
+
   if (elements == 'probabilities'){
+
+    transition_matrix[1, 1] <- 1 - cpi
+    transition_matrix[1, 2] <- cpi
+
     row_sums <- if (sparse) Matrix::rowSums(transition_matrix) else rowSums(transition_matrix)
     stopifnot(all(abs(row_sums - 1) <= 0.00001))
   }
@@ -243,13 +253,14 @@ make_transition_matrix <- function(statemat, s0, beta, gamma, beta0 = 0, sparse 
 #' res_dense <- emmdt(s0 = 10, i0 = 1, beta = 1.5, gamma = 1.0, sparse = FALSE)
 #'
 #' @export
-emmdt <- function(s0, i0, beta, gamma, sparse = TRUE) {
+emmdt <- function(s0, i0, beta, gamma, beta0 = 0, cpi = 0, sparse = TRUE) {
 
   stopifnot(
     length(s0) == 1,
     length(i0) == 1,
     s0 >= 1,
-    i0 >= 1,
+    #i0 >= 1,
+    i0 >= 0,
     beta >= 0,
     gamma >= 0,
     is.logical(sparse)
@@ -261,18 +272,38 @@ emmdt <- function(s0, i0, beta, gamma, sparse = TRUE) {
   transition_matrix <- make_transition_matrix(
     state_table,
     s0 = s0,
+    i0 = i0,
     beta = beta,
     gamma = gamma,
+    beta0 = beta0,
+    cpi = cpi,
     sparse = sparse,
     elements = 'probabilities'
   )
 
-  absorbing_states <- state_table[, 2] == 0
-  absorbing_states_idx <- which(absorbing_states)
-  transient_states_idx <- which(!absorbing_states)
+  if (i0 == 0){
+    absorbing_states <- state_table[, 2] == 0
+    absorbing_states_excluding_0 <- absorbing_states & state_table[, 1] != s0
 
-  qmat <- transition_matrix[transient_states_idx, transient_states_idx]
-  rmat <- transition_matrix[transient_states_idx, absorbing_states_idx]
+    absorbing_states_idx <- which(absorbing_states)
+
+    transient_states_idx_excluding_0 <- which(!absorbing_states)
+    transient_states_idx_including_0 <- which(!absorbing_states_excluding_0)
+
+    #qmat <- transition_matrix[transient_states_idx_including_0, transient_states_idx_excluding_0]
+    qmat <- transition_matrix[transient_states_idx_including_0, transient_states_idx_including_0] # manler en rad + kolonne
+    qmat[1,1] <- 0
+    rmat <- transition_matrix[transient_states_idx_including_0, absorbing_states_idx]
+
+  } else {
+    absorbing_states <- state_table[, 2] == 0
+    absorbing_states_idx <- which(absorbing_states)
+    transient_states_idx <- which(!absorbing_states)
+
+    qmat <- transition_matrix[transient_states_idx, transient_states_idx]
+    rmat <- transition_matrix[transient_states_idx, absorbing_states_idx]
+  }
+
 
   # Compute the fundamental matrix
   if (sparse){
@@ -291,7 +322,6 @@ emmdt <- function(s0, i0, beta, gamma, sparse = TRUE) {
     sol_row_sums <- rowSums(solution_mat)
   }
 
-
   stopifnot(
     all(abs(sol_row_sums - 1) <= 0.0001),
     all(solution_mat >= 0)
@@ -301,8 +331,7 @@ emmdt <- function(s0, i0, beta, gamma, sparse = TRUE) {
   i_final <- s0 - state_table[absorbing_states_idx, 1]
 
   # Verify absorbing states are ordered as expected.
-  stopifnot(all(i_final == (-i0:s0)))
-
+  #stopifnot(all(i_final == (-i0:s0)))
   fs_distr <- solution_mat[paste0(c(s0, i0), collapse = "-"), i_final >= 0]
   names(fs_distr) <- NULL
 
@@ -356,6 +385,7 @@ emmct <- function(s0, i0, beta, gamma, time, beta0 = 0, sparse = TRUE, expm_meth
 
   qmatrix <- make_transition_matrix(statemat = state_table,
                                     s0 = s0,
+                                    i0 = i0,
                                     beta = beta,
                                     gamma = gamma,
                                     beta0 = beta0,
@@ -440,6 +470,7 @@ emmct_sis <- function(s0, i0, gamma, beta, time, beta0 = 0, sparse = TRUE, expm_
 
   qmatrix <- make_transition_matrix(statemat = state_table,
                                     s0 = s0,
+                                    i0 = i0,
                                     beta = beta,
                                     gamma = gamma,
                                     beta0 = beta0,
