@@ -39,6 +39,5 @@ fsdistr(s0 = 10, i0 = 1, beta = 1.4, ip_model = "constant", ip_params = 1 / 0.9)
 
 }
 \references{
-Britton, T., & Pardoux, E. (Eds.). (2019). \emph{Stochastic Epidemic Models
-with Inference}. Springer.
+Demiris, N., & O'Neill, P. D. (Eds.). (2006). \emph{Computation of final outcome probabilities for the generalized stochastic epidemic}.
 }

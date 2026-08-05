@@ -61,17 +61,17 @@ constant, with length of 1 unit of time:
 fsdistr(s0 = 5, i0 = 2, beta = 1.5, ip_model = 'constant', ip_params = c(1.0))
 ```
 
-    ## [1] 0.04978707 0.06164073 0.09069475 0.15485522 0.27250941 0.37051282
+    ## [1] 0.08208500 0.09794842 0.12964406 0.18559504 0.25461123 0.25011625
 
 and here is the probability distribution if the infectious period
-follows a gamma distribution, with rate parameter 2 and shape parameter
+follows a gamma distribution, with shape parameter 2 and rate parameter
 3:
 
 ``` r
-fsdistr(s0 = 5, i0 = 2, beta = 1.5, ip_model = 'gamma', ip_params = c(3, 2))
+fsdistr(s0 = 5, i0 = 2, beta = 1.5, ip_model = 'gamma', ip_params = c(2, 3))
 ```
 
-    ## [1] 0.03481543 0.03026028 0.03860363 0.07220707 0.19205901 0.63205459
+    ## [1] 0.24827289 0.19162508 0.17023565 0.16018878 0.14119849 0.08847912
 
 ### Multitype Final Size distribution with general infectious period
 
@@ -87,7 +87,8 @@ secondary cases in each group.
 ``` r
 i0 <- c(1,0) # primary case in first group.
 s0 <- c(3,3)
-beta_matrix <- matrix(0.8*c(1,0.2,1,0.2), ncol = 2, nrow= 2)
+
+beta_matrix <- matrix(c(1.5,1.5,0.1,0.1), ncol = 2, nrow= 2)
 
 fs_mt_res <- fsdistr_mt(s0 = s0, i0 = i0, beta = beta_matrix, 
                         ip_model = c('gamma', 'exponential'), 
@@ -96,12 +97,12 @@ fs_mt_res <- fsdistr_mt(s0 = s0, i0 = i0, beta = beta_matrix,
 fs_mt_res
 ```
 
-    ##         0-0         1-0         2-0         3-0         0-1         1-1 
-    ## 0.364431487 0.072701946 0.021152452 0.004938654 0.153700211 0.089503247 
-    ##         2-1         3-1         0-2         1-2         2-2         3-2 
-    ## 0.049557161 0.019177601 0.037943725 0.050029355 0.049113215 0.030648027 
-    ##         0-3         1-3         2-3         3-3 
-    ## 0.004642047 0.012168926 0.020252234 0.020039711
+    ##          0-0          1-0          2-0          3-0          0-1          1-1 
+    ## 3.644315e-01 1.708484e-01 1.554547e-01 1.600681e-01 1.153999e-02 1.841024e-02 
+    ##          2-1          3-1          0-2          1-2          2-2          3-2 
+    ## 3.512032e-02 6.605509e-02 2.877587e-04 1.046635e-03 3.677280e-03 1.194314e-02 
+    ##          0-3          1-3          2-3          3-3 
+    ## 4.119952e-06 2.824014e-05 1.690591e-04 9.154739e-04
 
 It can be useful to also look at the marginal distributions of the
 number of secondary cases in each group. Notice how the group with low
@@ -112,16 +113,16 @@ susceptibility has much higher chance of no cases.
 sapply(split(fs_mt_res, f = substr(names(fs_mt_res), start = 1, stop = 1)), FUN = sum)
 ```
 
-    ##          0          1          2          3 
-    ## 0.56071747 0.22440348 0.14007506 0.07480399
+    ##         0         1         2         3 
+    ## 0.3762634 0.1903335 0.1944214 0.2389818
 
 ``` r
 # Group 2
 sapply(split(fs_mt_res, f = substr(names(fs_mt_res), start = 3, stop = 3)), FUN = sum)
 ```
 
-    ##          0          1          2          3 
-    ## 0.46322454 0.31193822 0.16773432 0.05710292
+    ##           0           1           2           3 
+    ## 0.850802660 0.131125635 0.016954812 0.001116893
 
 # Markov models
 
@@ -136,7 +137,7 @@ emmct_res <- emmct(s0 = 5, i0 = 2, beta = 1.5, gamma = 1, time = 0.7)
 emmct_res$fs_distr
 ```
 
-    ## [1] 0.25428255 0.24942035 0.22253465 0.16142656 0.08631204 0.02602385
+    ## [1] 0.31298278 0.27709375 0.21228488 0.12852594 0.05582867 0.01328398
 
 Lets take a look at how it looks some time later (4 infectious periods).
 Notice how the distribution is similar to the one computed in the very
@@ -147,14 +148,14 @@ emmct_res2 <- emmct(s0 = 5, i0 = 2, beta = 1.5, gamma = 1, time = 4)
 emmct_res2$fs_distr
 ```
 
-    ## [1] 0.1600218 0.1061709 0.1023895 0.1296803 0.1992438 0.3024937
+    ## [1] 0.1975918 0.1316998 0.1236568 0.1448545 0.1888621 0.2133349
 
 ``` r
 # compare withe final size distribution with exponential infectious period
 fs_res1
 ```
 
-    ## [1] 0.1600000 0.1059354 0.1011009 0.1251991 0.1908230 0.3169416
+    ## [1] 0.1975309 0.1311728 0.1214000 0.1390015 0.1820444 0.2288504
 
 The discrete time version of the Epidemic Markov Model (function emmdt)
 can be used to compute the final size distribution, which should match
@@ -166,7 +167,7 @@ emmdt_res <- emmdt(s0 = 5, i0 = 2, beta = 1.5, gamma = 1)
 emmdt_res$fs_distr
 ```
 
-    ## [1] 0.1600000 0.1059354 0.1011009 0.1251991 0.1908230 0.3169416
+    ## [1] 0.1975309 0.1311728 0.1214000 0.1390015 0.1820444 0.2288504
 
 ## Other packages
 

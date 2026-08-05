@@ -61,11 +61,11 @@ length of 1 unit of time:
 ```{r}
 fsdistr(s0 = 5, i0 = 2, beta = 1.5, ip_model = 'constant', ip_params = c(1.0))
 ```
-and here is the probability distribution if the infectious period follows a gamma distribution, with 
-rate parameter 2 and shape parameter 3:
+and here is the probability distribution if the infectious period follows a gamma distribution, with shape parameter 2 and
+rate parameter 3:
 
 ```{r}
-fsdistr(s0 = 5, i0 = 2, beta = 1.5, ip_model = 'gamma', ip_params = c(3, 2))
+fsdistr(s0 = 5, i0 = 2, beta = 1.5, ip_model = 'gamma', ip_params = c(2, 3))
 ```
 
 ### Multitype Final Size distribution with general infectious period
@@ -79,7 +79,8 @@ vector showing the joint probability distribution of the number of secondary cas
 ```{r}
 i0 <- c(1,0) # primary case in first group.
 s0 <- c(3,3)
-beta_matrix <- matrix(0.8*c(1,0.2,1,0.2), ncol = 2, nrow= 2)
+
+beta_matrix <- matrix(c(1.5,1.5,0.1,0.1), ncol = 2, nrow= 2)
 
 fs_mt_res <- fsdistr_mt(s0 = s0, i0 = i0, beta = beta_matrix, 
                         ip_model = c('gamma', 'exponential'), 
@@ -96,7 +97,6 @@ sapply(split(fs_mt_res, f = substr(names(fs_mt_res), start = 1, stop = 1)), FUN 
 # Group 2
 sapply(split(fs_mt_res, f = substr(names(fs_mt_res), start = 3, stop = 3)), FUN = sum)
 ```
-
 
 
 # Markov models

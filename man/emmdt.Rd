@@ -6,7 +6,7 @@
 \alias{emmct_sis}
 \title{Epidemic Markov Models}
 \usage{
-emmdt(s0, i0, beta, gamma, sparse = TRUE)
+emmdt(s0, i0, beta, gamma, beta0 = 0, cpi = 0, sparse = TRUE)
 
 emmct(s0, i0, beta, gamma, time, beta0 = 0, sparse = TRUE, expm_method = NULL)
 
@@ -32,13 +32,13 @@ infection probability is proportional to \code{beta * S * I / s0}.}
 \item{gamma}{Non-negative numeric. Recovery rate parameter. The per-step
 recovery probability is proportional to \code{gamma * I}.}
 
+\item{beta0}{Non-negative numeric. Rate of infection from outside the population.}
+
 \item{sparse}{Logical. If \code{TRUE} (default), use a sparse matrix
 representation via the Matrix package; otherwise use a dense matrix.
 Sparse matrices are faster for large populations.}
 
 \item{time}{Positive numeric. The time to evaluate the the model, assuming an initial state at time 0 defined by \code{s0} and \code{i0}.}
-
-\item{beta0}{Non-negative numeric. Rate of infection from outside the population.}
 }
 \value{
 A list with the following elements:
