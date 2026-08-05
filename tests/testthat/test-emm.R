@@ -30,20 +30,20 @@ test_that("make_markov_state_table columns are S and I counts", {
 
 test_that("make_transition_matrix dense rows sum to 1 (probabilities)", {
   st <- make_markov_state_table(s0 + i0)
-  tm <- make_transition_matrix(st, s0 = s0, beta = beta, gamma = gamma, sparse = FALSE)
+  tm <- make_transition_matrix(st, s0 = s0, i0 = i0, beta = beta, gamma = gamma, sparse = FALSE)
   expect_equal(rowSums(tm), rep(1, nrow(tm)), tolerance = 1e-6, ignore_attr = TRUE)
 })
 
 test_that("make_transition_matrix sparse rows sum to 1 (probabilities)", {
   st <- make_markov_state_table(s0 + i0)
-  tm <- make_transition_matrix(st, s0 = s0, beta = beta, gamma = gamma, sparse = TRUE)
+  tm <- make_transition_matrix(st, s0 = s0, i0 = i0, beta = beta, gamma = gamma, sparse = TRUE)
   expect_equal(as.numeric(Matrix::rowSums(tm)), rep(1, nrow(tm)), tolerance = 1e-6)
 })
 
 test_that("make_transition_matrix sparse and dense are equivalent (probabilities)", {
   st <- make_markov_state_table(s0 + i0)
-  tm_dense <- make_transition_matrix(st, s0 = s0, beta = beta, gamma = gamma, sparse = FALSE)
-  tm_sparse <- make_transition_matrix(st, s0 = s0, beta = beta, gamma = gamma, sparse = TRUE)
+  tm_dense <- make_transition_matrix(st, s0 = s0, i0 = i0, beta = beta, gamma = gamma, sparse = FALSE)
+  tm_sparse <- make_transition_matrix(st, s0 = s0, i0 = i0, beta = beta, gamma = gamma, sparse = TRUE)
 
   expect_equal(dim(tm_dense), dim(tm_sparse))
   expect_equal(colnames(tm_dense), colnames(tm_sparse))
@@ -54,8 +54,8 @@ test_that("make_transition_matrix sparse and dense are equivalent (probabilities
 
 test_that("make_transition_matrix sparse and dense are equivalent (rates)", {
   st <- make_markov_state_table(s0 + i0)
-  tm_dense <- make_transition_matrix(st, s0 = s0, beta = beta, gamma = gamma, sparse = FALSE, elements = 'rates')
-  tm_sparse <- make_transition_matrix(st, s0 = s0, beta = beta, gamma = gamma, sparse = TRUE, elements = 'rates')
+  tm_dense <- make_transition_matrix(st, s0 = s0, i0 = i0, beta = beta, gamma = gamma, sparse = FALSE, elements = 'rates')
+  tm_sparse <- make_transition_matrix(st, s0 = s0, i0 = i0, beta = beta, gamma = gamma, sparse = TRUE, elements = 'rates')
 
   expect_equal(dim(tm_dense), dim(tm_sparse))
   expect_equal(colnames(tm_dense), colnames(tm_sparse))
@@ -64,7 +64,7 @@ test_that("make_transition_matrix sparse and dense are equivalent (rates)", {
 })
 
 
-# emmdt ------------------------------------------------------------------
+# emmdt (beta0 = 0) ------------------------------------------------------------------
 
 test_that("emmdt fs_distr has length s0 + 1", {
   res <- emmdt(s0 = s0, i0 = i0, beta = beta, gamma = gamma)
@@ -101,9 +101,9 @@ test_that("emmdt solution_mat rows sum to 1", {
   )
 })
 
-test_that("emmdt requires i0 >= 1", {
-  expect_snapshot(emmdt(s0 = 10, i0 = 0, beta = 1.5, gamma = 1.0), error = TRUE)
-})
+# test_that("emmdt requires i0 >= 1", {
+#   expect_snapshot(emmdt(s0 = 10, i0 = 0, beta = 1.5, gamma = 1.0), error = TRUE)
+# })
 
 test_that("emmdt requires s0 >= 1", {
   expect_snapshot(emmdt(s0 = 0, i0 = 1, beta = 1.5, gamma = 1.0), error = TRUE)
@@ -119,6 +119,71 @@ test_that("emmdt matches  fsdist (exponential)", {
 
   expect_true(all(abs(res_emmdt$fs_distr - res_fsdistr) <= 1e-10))
 })
+
+
+
+# emmdt (beta0 > 0) ------------------------------------------------------------------
+#
+test_that("emmdt fs_distr has length s0 + 1", {
+  res <- emmdt(s0 = s0, i0 = i0, beta = beta, beta0 = beta0, gamma = gamma)
+  expect_length(res$fs_distr, s0 + 1)
+})
+
+test_that("emmdt fs_distr sums to 1", {
+  res <- emmdt(s0 = s0, i0 = i0, beta = beta, beta0 = beta0, gamma = gamma)
+  expect_equal(sum(res$fs_distr), 1, tolerance = 1e-6)
+})
+
+test_that("emmdt fs_distr probabilities are non-negative", {
+  res <- emmdt(s0 = s0, i0 = i0, beta = beta, beta0 = beta0, gamma = gamma)
+  expect_gte(min(res$fs_distr), 0)
+})
+
+test_that("emmdt sparse and dense give same fs_distr", {
+  res_sparse <- emmdt(s0 = s0, i0 = i0, beta = beta, gamma = gamma, beta0 = beta0, sparse = TRUE)
+  res_dense <- emmdt(s0 = s0, i0 = i0, beta = beta, gamma = gamma, beta0 = beta0, sparse = FALSE)
+  expect_equal(res_sparse$fs_distr, res_dense$fs_distr, tolerance = 1e-6)
+})
+
+test_that("emmdt returns expected list elements", {
+  res <- emmdt(s0 = s0, i0 = i0, beta = beta, gamma = gamma, beta0 = beta0)
+  expect_named(res, c("transition_matrix", "qmat", "rmat", "fmat", "solution_mat", "fs_distr"))
+})
+
+
+test_that("emmdt solution_mat rows sum to 1", {
+  res <- emmdt(s0 = s0, i0 = i0, beta = beta, gamma = gamma, beta0 = beta0)
+  expect_equal(
+    as.numeric(Matrix::rowSums(res$solution_mat)),
+    rep(1, nrow(res$solution_mat)),
+    tolerance = 1e-6
+  )
+})
+
+test_that("equivalent results with cpi = 1 and cpi = 0", {
+
+  res_80 <- emmdt(s0 = 8, i0 = 0, beta = 1.2, beta0 = 0.05, gamma = 1.06, cpi = 1)
+  res_71 <- emmdt(s0 = 7, i0 = 1, beta = 1.2, beta0 = 0.05, gamma = 1.06, cpi = 0)
+
+  expect_equal(
+    res_80$fs_distr[-1],
+    res_71$fs_distr,
+    tolerance = 1e-6
+  )
+
+})
+
+
+
+
+# test_that("emmdt requires i0 >= 1", {
+#   expect_snapshot(emmdt(s0 = 10, i0 = 0, beta = 1.5, gamma = 1.0), error = TRUE)
+# })
+#
+# test_that("emmdt requires s0 >= 1", {
+#   expect_snapshot(emmdt(s0 = 0, i0 = 1, beta = 1.5, gamma = 1.0,  beta0 = beta0), error = TRUE)
+# })
+
 
 
 
@@ -248,6 +313,17 @@ test_that("emmct sparse and dense are equivalent (beta0 != 0)", {
   expect_equal(as.matrix(res_s$transition_matrix), res_d$transition_matrix)
 
 })
+
+# emmct and emmdt ------------------------------------------------------------------
+
+test_that("emmct and emmdt give similar results when time is large", {
+  res_emmdt <- emmdt(s0 = 6, i0 = i0, beta = beta, gamma = gamma, beta0 = beta0)
+  res_emmct <- emmct(s0 = 6, i0 = i0, beta = beta, gamma = gamma, beta0 = beta0, time = 10)
+
+  expect_equal(res_emmct$fs_distr, res_emmdt$fs_distr, tolerance = 1e-3)
+
+})
+
 
 # emmct_sis ------------------------------------------------------------------
 

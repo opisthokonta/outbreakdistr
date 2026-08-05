@@ -95,6 +95,8 @@ run_multitype_simulation <- function(i0, s0, beta,
   cur_s    <- s0
   cur_time <- 0
 
+  N <- sum(i0) + sum(s0)
+
   while (any(cur_s > 0)) {
 
     cur_i_idx <- which(infection_times <= cur_time & recovery_times > cur_time)
@@ -102,7 +104,8 @@ run_multitype_simulation <- function(i0, s0, beta,
 
     cur_i_group <- count_i(individual_group_idx[cur_i_idx], m = m)
 
-    foi              <- as.numeric(cur_i_group %*% (beta / sum(s0)))
+    #foi              <- as.numeric(cur_i_group %*% (beta / sum(s0)))
+    foi              <- as.numeric(cur_i_group %*% (beta / (N-1)))
     infection_rate   <- foi * cur_s
     next_inf_times   <- cur_time + rexp0(n = m, rate = infection_rate)
     next_inf_time    <- min(next_inf_times, na.rm = TRUE)

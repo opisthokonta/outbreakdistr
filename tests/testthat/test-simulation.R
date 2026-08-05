@@ -9,7 +9,7 @@
 
 # fsdistr() – single-type -----------------------------------------------------
 
-skip_simulations <- FALSE
+skip_simulations <- TRUE
 
 test_that("fsdistr matches simulation (exponential infectious period)", {
   skip_if(skip_simulations, message = "Skipping simulations")

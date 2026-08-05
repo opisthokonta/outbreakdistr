@@ -207,7 +207,7 @@ test_that("fsdistr_mt result names encode outcomes correctly", {
 
 test_that("fsdistr_mt result marignal distribution matches fsdistr", {
 
-  s0 <- c(3, 1)
+  s0 <- c(3,1)
   i0 <- c(1,1)
 
   s0_tot <- sum(s0)
@@ -225,7 +225,7 @@ test_that("fsdistr_mt result marignal distribution matches fsdistr", {
   total_i <- rowSums(fsdistr_mt_res[,-ncol(fsdistr_mt_res), drop=FALSE])
   fsdistr_mt_res_tot <- sapply(split(x = fsdistr_mt_res$probability, f = total_i), FUN = sum)
 
-  # also compute the mt distributin with reverse ordering of the groups
+  # also compute the mt distribution with reverse ordering of the groups
   fsdistr_mt_res_rev <- fsdistr_mt(i0 = rev(i0), s0 = rev(s0), beta = beta_mat, ip_model = 'constant', return_df = TRUE)
   total_i_rev <- rowSums(fsdistr_mt_res_rev[,-ncol(fsdistr_mt_res_rev), drop=FALSE])
   fsdistr_mt_res_tot_rev <- sapply(split(x = fsdistr_mt_res_rev$probability, f = total_i_rev), FUN = sum)
