@@ -9,8 +9,8 @@ simulation methods. The package is mostly suitable for smaller outbreaks
 cities or countries. This is because the methods tend to be slow and
 numerically unstable for larger groups.
 
-This package is in early stages of development, functionality and
-interface will probably change substantially.
+This package is in early stages of development. Functionality, interface
+and algorithmic details will probably change substantially.
 
 Currently implemented:
 
@@ -19,7 +19,8 @@ Currently implemented:
 - Epidemic Markov Models: Continuous time SIR and SIS models, discrete
   time SIR.
 
-Keywords: Infectious disease modelling, Final size distribution.
+Keywords: Infectious disease modelling, Epidemic modelling, Final size
+distribution.
 
 ## Installation
 
@@ -47,7 +48,7 @@ initially susceptible. This corresponds to a basic reproduction number
 R0 = 1.5.
 
 ``` r
-fs_res1 <- fsdistr(s0 = 5, i0 = 2, beta = 1.5, ip_model = 'exponential', ip_params = c(1.0))
+fs_res1 <- fsdistr(s0 = 5, i0 = 2, beta = 1.6, ip_model = 'exponential', ip_params = c(1.0))
 
 barplot(height = fs_res1, names.arg = 0:5, xlab = 'Number of secondary cases', ylab = 'Probability')
 ```
@@ -58,20 +59,20 @@ Here is the probability distribution if the infectious period is
 constant, with length of 1 unit of time:
 
 ``` r
-fsdistr(s0 = 5, i0 = 2, beta = 1.5, ip_model = 'constant', ip_params = c(1.0))
+fsdistr(s0 = 5, i0 = 2, beta = 1.6, ip_model = 'constant', ip_params = c(1.0))
 ```
 
-    ## [1] 0.08208500 0.09794842 0.12964406 0.18559504 0.25461123 0.25011625
+    ## [1] 0.1017014 0.1181196 0.1477982 0.1941880 0.2371809 0.2010120
 
 and here is the probability distribution if the infectious period
 follows a gamma distribution, with shape parameter 2 and rate parameter
 3:
 
 ``` r
-fsdistr(s0 = 5, i0 = 2, beta = 1.5, ip_model = 'gamma', ip_params = c(2, 3))
+fsdistr(s0 = 5, i0 = 2, beta = 1.6, ip_model = 'gamma', ip_params = c(2, 3))
 ```
 
-    ## [1] 0.24827289 0.19162508 0.17023565 0.16018878 0.14119849 0.08847912
+    ## [1] 0.27496992 0.20581029 0.17427485 0.15322033 0.12324093 0.06848368
 
 ### Multitype Final Size distribution with general infectious period
 
@@ -98,11 +99,11 @@ fs_mt_res
 ```
 
     ##          0-0          1-0          2-0          3-0          0-1          1-1 
-    ## 3.644315e-01 1.708484e-01 1.554547e-01 1.600681e-01 1.153999e-02 1.841024e-02 
+    ## 4.129624e-01 1.860185e-01 1.516744e-01 1.280127e-01 1.240797e-02 1.871884e-02 
     ##          2-1          3-1          0-2          1-2          2-2          3-2 
-    ## 3.512032e-02 6.605509e-02 2.877587e-04 1.046635e-03 3.677280e-03 1.194314e-02 
+    ## 3.126649e-02 4.661501e-02 2.956116e-04 9.962123e-04 2.984232e-03 7.398770e-03 
     ##          0-3          1-3          2-3          3-3 
-    ## 4.119952e-06 2.824014e-05 1.690591e-04 9.154739e-04
+    ## 4.054966e-06 2.517386e-05 1.247814e-04 4.948018e-04
 
 It can be useful to also look at the marginal distributions of the
 number of secondary cases in each group. Notice how the group with low
@@ -114,15 +115,15 @@ sapply(split(fs_mt_res, f = substr(names(fs_mt_res), start = 1, stop = 1)), FUN 
 ```
 
     ##         0         1         2         3 
-    ## 0.3762634 0.1903335 0.1944214 0.2389818
+    ## 0.4256701 0.2057587 0.1860499 0.1825213
 
 ``` r
-# Group 2
+# Group 2 - low susceptibility
 sapply(split(fs_mt_res, f = substr(names(fs_mt_res), start = 3, stop = 3)), FUN = sum)
 ```
 
-    ##           0           1           2           3 
-    ## 0.850802660 0.131125635 0.016954812 0.001116893
+    ##            0            1            2            3 
+    ## 0.8786680486 0.1090083132 0.0116748260 0.0006488121
 
 # Markov models
 
@@ -133,29 +134,29 @@ function. Lets take a look at the cumulative incidence a short period
 after (0.7 infectious periods) the outbreak starts:
 
 ``` r
-emmct_res <- emmct(s0 = 5, i0 = 2, beta = 1.5, gamma = 1, time = 0.7)
+emmct_res <- emmct(s0 = 5, i0 = 2, beta = 1.6, gamma = 1, time = 0.7)
 emmct_res$fs_distr
 ```
 
-    ## [1] 0.31298278 0.27709375 0.21228488 0.12852594 0.05582867 0.01328398
+    ## [1] 0.343008668 0.287031193 0.203553357 0.112716658 0.044276505 0.009413619
 
 Lets take a look at how it looks some time later (4 infectious periods).
 Notice how the distribution is similar to the one computed in the very
 first example.
 
 ``` r
-emmct_res2 <- emmct(s0 = 5, i0 = 2, beta = 1.5, gamma = 1, time = 4)
+emmct_res2 <- emmct(s0 = 5, i0 = 2, beta = 1.6, gamma = 1, time = 4)
 emmct_res2$fs_distr
 ```
 
-    ## [1] 0.1975918 0.1316998 0.1236568 0.1448545 0.1888621 0.2133349
+    ## [1] 0.2178721 0.1446813 0.1332475 0.1492743 0.1789660 0.1759587
 
 ``` r
 # compare withe final size distribution with exponential infectious period
 fs_res1
 ```
 
-    ## [1] 0.1975309 0.1311728 0.1214000 0.1390015 0.1820444 0.2288504
+    ## [1] 0.2177778 0.1439480 0.1304551 0.1430106 0.1734638 0.1913448
 
 The discrete time version of the Epidemic Markov Model (function emmdt)
 can be used to compute the final size distribution, which should match
@@ -163,11 +164,70 @@ the result from fsdistr. The emmdt is more numerically stable for larger
 population sizes than fsdistr in my experience.
 
 ``` r
-emmdt_res <- emmdt(s0 = 5, i0 = 2, beta = 1.5, gamma = 1)
+emmdt_res <- emmdt(s0 = 5, i0 = 2, beta = 1.6, gamma = 1)
 emmdt_res$fs_distr
 ```
 
-    ## [1] 0.1975309 0.1311728 0.1214000 0.1390015 0.1820444 0.2288504
+    ## [1] 0.2177778 0.1439480 0.1304551 0.1430106 0.1734638 0.1913448
+
+## Precision arithmetic
+
+The exact methods can sometimes be numerically unstable, yielding
+negative probabilities. It is not easy to predict exactly which
+situations will give instability, but tend to occur for population sizes
+greater than 20, and when a large portion of the sample space have
+probabilities close to 0. It can be remedied by using higher precision
+arithemtic. Here is an example of a setting giving negative
+probabilties. A warning is given, suggesting using higher precision
+arithmetic.
+
+``` r
+# fs_res_unstable <- fsdistr(s0 = 50, i0 = 1, beta = 1.4, ip_model = 'exponential', ip_params = c(1.0))
+fs_res_unstable <- fsdistr(s0 = 50, i0 = 1, beta = 1.2, ip_model = 'exponential', ip_params = c(1.0))
+```
+
+    ## Warning in fsdistr_internal(s0 = s0, i0 = i0, beta = beta, ip_model = ip_model,
+    ## : Some probability negative. Try using greater arithmetic precicion via the
+    ## 'prec' argument.
+
+``` r
+barplot(height = fs_res_unstable, names.arg = 0:50, xlab = 'Number of secondary cases', ylab = 'Probability')
+```
+
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+Use the ‘prec’ argument to set the precision. Try setting it to 64, and
+increase it if it doesn’t work. The precision arithmetic is provided
+trough the Rmpfr package, and the prec argument corresponds to the
+precBits argument used in Rmpfr.
+
+``` r
+fs_res_precise <- fsdistr(s0 = 50, i0 = 1, beta = 1.2, ip_model = 'exponential', ip_params = c(1.0), prec = 64)
+barplot(height = fs_res_precise, names.arg = 0:50, xlab = 'Number of secondary cases', ylab = 'Probability')
+```
+
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+Numerical issues can also happen without the probabilities becoming
+negative. Here is an example for a 45 person population, where we zoom
+in on the probability distribution from 20 to 45 cases. We see that it’s
+a bit jaggged, which is unrealistic. Increasing the arithmetic precision
+gives a smoother and more realistic probability distribution.
+
+Since none of the probabilities are negative, it does not throw a
+warning, and I don’t know how to identify these signs of numerical
+instability, other than visual inspection.
+
+``` r
+fs_res_unstable2 <- fsdistr(s0 = 45, i0 = 1, beta = 1.11, ip_model = 'exponential', ip_params = c(1.0))
+fs_res_precise2 <- fsdistr(s0 = 45, i0 = 1, beta = 1.11, ip_model = 'exponential', ip_params = c(1.0), prec=64)
+
+layout(matrix(c(1,2), nrow=1))
+barplot(fs_res_unstable2[21:46], names.arg = 20:45, main = 'normal precision')
+barplot(fs_res_precise2[21:46], names.arg = 20:45, main = 'increased precision')
+```
+
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ## Other packages
 

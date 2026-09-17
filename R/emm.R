@@ -48,7 +48,8 @@ make_transition_matrix <- function(statemat, s0, beta, gamma, i0, beta0 = 0, cpi
 
   state_labels <- apply(statemat, MARGIN = 1, FUN = \(x) paste0(x, collapse = "-"))
 
-  infection_rate <- (beta * statemat[, 1] * (statemat[, 2] / (s0 + i0 - 1) )) + (beta0 * statemat[, 1])
+  #infection_rate <- (beta * statemat[, 1] * (statemat[, 2] / (s0 + i0 - 1) )) + (beta0 * statemat[, 1])
+  infection_rate <- (beta * statemat[, 1] * (statemat[, 2] / (s0 + i0) )) + (beta0 * statemat[, 1])
   recovery_rate <- gamma * statemat[, 2]
 
   if (elements == 'probabilities'){

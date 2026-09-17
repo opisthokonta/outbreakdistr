@@ -3,7 +3,7 @@
 
 infectious_period <- 0.9
 s0 <- 6
-i0 <- 1
+i0 <- 2
 beta <- 1.4
 
 

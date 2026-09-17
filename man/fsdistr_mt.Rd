@@ -10,7 +10,8 @@ fsdistr_mt(
   beta,
   ip_model = "exponential",
   ip_params = list(1),
-  return_df = FALSE
+  return_df = FALSE,
+  prec = NULL
 )
 }
 \arguments{
@@ -31,6 +32,11 @@ Infectious period model per group: \code{"constant"}, \code{"exponential"}, or
 \item{ip_params}{List of length \code{m} (or length 1, recycled). Each element
 is the parameter(s) for the infectious period distribution of the
 corresponding group.}
+
+\item{return_df}{logical. If results should be given as a data.frame. Default is a named numeric vector.}
+
+\item{prec}{numeric. If multiple precision arithmetic should be used. By default R's built-in
+double precision arithmetic is used. Set this to 64 or greater to use greater precision for the underlying computation.}
 }
 \value{
 A named numeric vector of length \code{prod(s0 + 1)}. Each element

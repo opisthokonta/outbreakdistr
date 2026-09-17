@@ -14,7 +14,6 @@ mgf <- function(t, params, model = "constant") {
 }
 
 
-
 validate_ip_model_params <- function(model, params) {
   if (!is.numeric(params)) {
     stop("Infectious period parameters must be numeric.")
@@ -69,60 +68,31 @@ subset_statemat_idx <- function(statemat, j) {
 }
 
 
-
-
-fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
-  stopifnot(
-    s0 > 0,
-    length(s0) == 1,
-    i0 >= 1,
-    length(i0) == 1,
-    length(xmax) == 1,
-    xmax >= 0,
-    ip_model %in% c("constant", "exponential", "gamma"),
-    is.numeric(beta),
-    beta >= 0
-  )
-
-  xmax <- min(s0, xmax)
-  N <- i0 + s0
-  probs <- numeric(xmax + 1)
-
-  for (kk in 0:xmax) {
-    idx <- kk + 1
-
-    if (kk == 0) {
-      probs[idx] <- mgf(t = beta, params = ip_params, model = ip_model)^(i0)
-      next
-    }
-
-    mgf_res <- mgf(
-      t = ((beta * (s0 - kk)) / (N-1)),
-      params = ip_params,
-      model = ip_model
-    )
-
-    term1 <- choose(s0, kk) * (mgf_res^(kk + i0))
-
-    ii <- 0:(kk - 1)
-    term2 <- sum(choose(s0 - ii, kk - ii) * (mgf_res^(kk - ii)) * probs[ii + 1])
-    probs[idx] <- term1 - term2
-  }
-
-  if ((xmax == s0) & (abs(sum(probs) - 1) > 0.0001)) {
-    warning("sum not 1")
-  }
-  if (any(probs < 0)) {
-    warning("some probability negative")
-  }
-
-  return(probs)
+# Functions for precision arithmetic.
+choose_precice <- function(a, n, prec){
+  choose_res <- Rmpfr::chooseMpfr(a, n)
+  new_prec <- max(Rmpfr::getPrec(choose_res), prec)
+  Rmpfr::mpfr(choose_res, precBits = new_prec)
 }
 
 
-# Compute the final size probability distribution (up to xmax infections).
-# Based on Demiris and O'Neill (2006).
-fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
+as_mpfr_matrix <- function(mat, prec){
+  mat2 <- Rmpfr::mpfr(as.numeric(mat), precBits = prec)
+  dim(mat2) <- dim(mat)
+  return(mat2)
+}
+
+as_mpfr_list <- function(x, prec){
+  for (ii in 1:length(x)){
+    x[[ii]] <- Rmpfr::mpfr(x[[ii]], precBits = prec)
+  }
+  return(x)
+}
+
+
+
+
+fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf, prec = NULL) {
   stopifnot(
     s0 > 0,
     length(s0) == 1,
@@ -137,21 +107,32 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
 
   xmax <- min(s0, xmax)
   N <- i0 + s0
-  N1 <- N - 1
-  probs <- numeric(xmax + 1)
+
+  if (!is.null(prec)){
+    beta <- Rmpfr::mpfr(beta, precBits = prec)
+    ip_params <- Rmpfr::mpfr(ip_params, precBits = prec)
+    probs <- Rmpfr::mpfr(rep(0, xmax + 1), precBits = prec)
+  } else {
+    probs <- numeric(xmax + 1)
+  }
+
 
   for (ll in 0:xmax) {
     idx <- ll + 1
 
     mgf_res <- mgf(
-      t = ((beta * (s0 - ll)) / N1) ,
+      t = ((beta * (s0 - ll)) / N) ,
       params = ip_params,
       model = ip_model
     )
 
     kk <- 0:ll
-    alk <- choose(s0 - kk, ll-kk) / (choose(s0, ll) * (mgf_res^(kk+i0)))
 
+    if (!is.null(prec)){
+      alk <- choose_precice(s0 - kk, ll-kk, prec = prec) / (choose_precice(s0, ll, prec = prec) * (mgf_res^(kk+i0)))
+    } else {
+      alk <- choose(s0 - kk, ll-kk) / (choose(s0, ll) * (mgf_res^(kk+i0)))
+    }
 
     if (ll == 0){
       sk <- 0
@@ -161,7 +142,6 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
         sk <- sk + (alk[ii]*probs[ii])
       }
     }
-
     probs[idx] <- (1 - sk)/ alk[idx]
 
   }
@@ -170,17 +150,19 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
     warning("sum not 1")
   }
   if (any(probs < 0)) {
-    warning("some probability negative")
+    warning("Some probability negative. Try using greater arithmetic precicion via the 'prec' argument.")
   }
+
+  probs <- as.numeric(probs)
 
   return(probs)
 }
+
 
 #' Final size distribution for a single-type stochastic SIR epidemic
 #'
 #' Computes the exact probability distribution of the number of susceptibles
 #' infected during an outbreak, for a closed homogeneously mixing population.
-#' Based on Theorem 3.12 in Britton & Pardoux (2019).
 #'
 #' @param s0 Integer. Initial number of susceptibles (must be >= 1).
 #' @param i0 Integer. Initial number of infectives (must be >= 1).
@@ -190,13 +172,18 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
 #' @param ip_params Numeric vector. Parameters for the infectious period
 #'   distribution. One value for `"constant"` or `"exponential"` (the rate or
 #'   duration); two values `(shape, rate)` for `"gamma"`.
+#' @param prec numeric. If multiple precision arithmetic should be used. By default R's built-in
+#' double precision arithmetic is used. Set this to 64 or greater to use greater precision for the underlying computation.
 #'
 #' @return A numeric vector of length `s0 + 1`. Element `k + 1` gives the
 #'   probability that exactly `k` susceptibles are infected (k = 0, 1, ...,
 #'   s0).
 #'
 #' @references
-#' Demiris, N., & O'Neill, P. D. (Eds.). (2006). *Computation of final outcome probabilities for the generalized stochastic epidemic*.
+#' * Ball, F. (1986). A unified approach to the distribution of total size and
+#' total area under the trajectory of infectives in epidemic models.
+#' *Advances in Applied Probability*, 18(2), 289–310.
+#' * Demiris, N., & O'Neill, P. D. (Eds.). (2006). *Computation of final outcome probabilities for the generalized stochastic epidemic*.
 #'
 #' @examples
 #' # Probability distribution with exponential infectious period
@@ -206,13 +193,19 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf) {
 #' fsdistr(s0 = 10, i0 = 1, beta = 1.4, ip_model = "constant", ip_params = 1 / 0.9)
 #'
 #' @export
-fsdistr <- function(s0, i0, beta, ip_model = "exponential", ip_params = 1) {
+fsdistr <- function(s0, i0, beta, ip_model = "exponential", ip_params = 1, prec = NULL) {
   validate_ip_model_params(model = ip_model, params = ip_params)
   stopifnot(length(ip_model) == 1)
+
+  if (!is.null(prec)){
+    stopifnot(is.numeric(prec),
+              length(prec) == 1)
+  }
+
   fsdistr_internal(
     s0 = s0, i0 = i0, beta = beta,
     ip_model = ip_model, ip_params = ip_params,
-    xmax = Inf
+    xmax = Inf, prec = prec
   )
 }
 
@@ -237,6 +230,9 @@ fsdistr <- function(s0, i0, beta, ip_model = "exponential", ip_params = 1) {
 #' @param ip_params List of length `m` (or length 1, recycled). Each element
 #'   is the parameter(s) for the infectious period distribution of the
 #'   corresponding group.
+#' @param return_df logical. If results should be given as a data.frame. Default is a named numeric vector.
+#' @param prec numeric. If multiple precision arithmetic should be used. By default R's built-in
+#' double precision arithmetic is used. Set this to 64 or greater to use greater precision for the underlying computation.
 #'
 #' @return A named numeric vector of length `prod(s0 + 1)`. Each element
 #'   gives the probability of the corresponding joint outcome, with names
@@ -258,7 +254,7 @@ fsdistr <- function(s0, i0, beta, ip_model = "exponential", ip_params = 1) {
 #'
 #' @export
 fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
-                       ip_params = list(1), return_df = FALSE) {
+                       ip_params = list(1), return_df = FALSE, prec = NULL) {
   m <- length(s0)
 
   if (length(ip_model) == 1) {
@@ -268,6 +264,11 @@ fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
   stopifnot(is.list(ip_params))
   if (length(ip_params) == 1) {
     ip_params <- rep(ip_params, m)
+  }
+
+  if (!is.null(prec)){
+    stopifnot(is.numeric(prec),
+              length(prec) == 1)
   }
 
   stopifnot(
@@ -296,24 +297,44 @@ fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
 
   stopifnot(nrow(statemat) == nstates)
 
-  probs <- numeric(nstates)
+  if (!is.null(prec)){
+    beta <- as_mpfr_matrix(beta, prec = prec)
+    ip_params <- as_mpfr_list(ip_params, prec = prec)
+    probs <- Rmpfr::mpfr(rep(0, nstates), precBits = prec)
+  } else {
+    probs <- numeric(nstates)
+  }
 
   for (jj in 1:nstates) {
     cur_state <- statemat[jj, ]
-    yy <- prod(choose(s0, cur_state))
+
+    if (!is.null(prec)){
+      yy <- prod(choose_precice(s0, cur_state, prec = prec))
+    } else {
+      yy <- prod(choose(s0, cur_state))
+    }
+
 
     statemat_idx <- subset_statemat_idx(statemat, j = jj)
     statematj <- statemat[statemat_idx, , drop = FALSE]
 
     xxj <- rep(0.0, jj)
 
+    if (!is.null(prec)){
+      xxj <- Rmpfr::mpfr(xxj, precBits = prec)
+    }
+
     for (oo in 1:nrow(statematj)) {
-      bcoef <- prod(choose(s0 - statematj[oo, ], cur_state - statematj[oo, ]))
+
+      if (!is.null(prec)){
+        bcoef <- prod(choose_precice(s0 - statematj[oo, ], cur_state - statematj[oo, ], prec = prec))
+      } else {
+        bcoef <- prod(choose(s0 - statematj[oo, ], cur_state - statematj[oo, ]))
+      }
 
       prod_tmp <- 1
       for (ii in 1:m) {
-        #mgf_eval_at <- sum((s0 - cur_state) * (beta[ii, ] / s0_tot))
-        mgf_eval_at <- sum((s0 - cur_state) * (beta[ii, ] / (s0_tot + i0_tot - 1)))
+        mgf_eval_at <- sum((s0 - cur_state) * (beta[ii, ] / (s0_tot + i0_tot)))
         mgf_res_tmp <- mgf(
           t = mgf_eval_at,
           params = ip_params[[ii]],
@@ -323,11 +344,14 @@ fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
       }
 
       xxj[statemat_idx[oo]] <- bcoef / prod_tmp
+
     }
 
     jidx <- 1:max(1, jj - 1)
     probs[jj] <- (yy - sum(probs[jidx] * xxj[jidx])) / xxj[jj]
   }
+
+  probs <- as.numeric(probs)
 
   if(return_df){
     res <- as.data.frame(cbind(statemat, probs))

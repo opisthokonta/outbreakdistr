@@ -4,7 +4,7 @@
 \alias{fsdistr}
 \title{Final size distribution for a single-type stochastic SIR epidemic}
 \usage{
-fsdistr(s0, i0, beta, ip_model = "exponential", ip_params = 1)
+fsdistr(s0, i0, beta, ip_model = "exponential", ip_params = 1, prec = NULL)
 }
 \arguments{
 \item{s0}{Integer. Initial number of susceptibles (must be >= 1).}
@@ -19,6 +19,9 @@ fsdistr(s0, i0, beta, ip_model = "exponential", ip_params = 1)
 \item{ip_params}{Numeric vector. Parameters for the infectious period
 distribution. One value for \code{"constant"} or \code{"exponential"} (the rate or
 duration); two values \verb{(shape, rate)} for \code{"gamma"}.}
+
+\item{prec}{numeric. If multiple precision arithmetic should be used. By default R's built-in
+double precision arithmetic is used. Set this to 64 or greater to use greater precision for the underlying computation.}
 }
 \value{
 A numeric vector of length \code{s0 + 1}. Element \code{k + 1} gives the
@@ -28,7 +31,6 @@ s0).
 \description{
 Computes the exact probability distribution of the number of susceptibles
 infected during an outbreak, for a closed homogeneously mixing population.
-Based on Theorem 3.12 in Britton & Pardoux (2019).
 }
 \examples{
 # Probability distribution with exponential infectious period
@@ -39,5 +41,10 @@ fsdistr(s0 = 10, i0 = 1, beta = 1.4, ip_model = "constant", ip_params = 1 / 0.9)
 
 }
 \references{
-Demiris, N., & O'Neill, P. D. (Eds.). (2006). \emph{Computation of final outcome probabilities for the generalized stochastic epidemic}.
+\itemize{
+\item Ball, F. (1986). A unified approach to the distribution of total size and
+total area under the trajectory of infectives in epidemic models.
+\emph{Advances in Applied Probability}, 18(2), 289–310.
+\item Demiris, N., & O'Neill, P. D. (Eds.). (2006). \emph{Computation of final outcome probabilities for the generalized stochastic epidemic}.
+}
 }
