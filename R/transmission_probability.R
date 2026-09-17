@@ -3,12 +3,12 @@
 # Internal functions to be used by get_transmission_probability.
 # Infectious period functions to integrate.
 # ie the expected value of exp(-(beta/s0)*x)
-intf_exponential <- function(x, beta, s0, ip_params){
-  exp(-(beta/s0) * x) * dexp(x = x, rate = ip_params)
+intf_exponential <- function(x, beta, n, ip_params){
+  exp(-(beta/n) * x) * dexp(x = x, rate = ip_params)
 }
 
-intf_gamma <- function(x, beta, s0, ip_params){
-  exp(-(beta/s0) * x) * dgamma(x = x, shape = ip_params[1], rate = ip_params[2])
+intf_gamma <- function(x, beta, n, ip_params){
+  exp(-(beta/n) * x) * dgamma(x = x, shape = ip_params[1], rate = ip_params[2])
 }
 
 
@@ -37,22 +37,22 @@ intf_gamma <- function(x, beta, s0, ip_params){
 #' transmission_probability(beta = 1.1, s0 = 1, ip_model = "gamma", ip_params = c(2, 2))
 #'
 #' @export
-transmission_probability <- function(beta, s0, ip_model = 'constant', ip_params = 1){
+transmission_probability <- function(beta, n, ip_model = 'constant', ip_params = 1){
 
-  stopifnot(length(beta) == length(s0))
+  stopifnot(length(beta) == length(n))
 
   res <- numeric(length(beta))
 
   for (ii in 1:length(beta)){
     if (ip_model == 'constant'){
       stopifnot(length(ip_params) == 1)
-      res[ii] <- 1 - exp(-(beta[ii]/s0[ii])*ip_params)
+      res[ii] <- 1 - exp(-(beta[ii]/n[ii])*ip_params)
     } else if (ip_model == 'exponential'){
       stopifnot(length(ip_params) == 1)
       upper_lim <- qexp(0.999, rate = ip_params)
       integrate_res <- integrate(f = intf_exponential,
                                  lower = 0, upper = upper_lim,
-                                 beta = beta[ii], s0 = s0[ii],
+                                 beta = beta[ii], n = n[ii],
                                  ip_params = ip_params)
       res[ii] <- 1 - integrate_res$value
     } else if (ip_model == 'gamma'){
@@ -60,7 +60,7 @@ transmission_probability <- function(beta, s0, ip_model = 'constant', ip_params 
       upper_lim <- qgamma(0.999, shape = ip_params[1],  rate = ip_params[2])
       integrate_res <- integrate(f = intf_gamma,
                                  lower = 0, upper = upper_lim,
-                                 beta = beta[ii], s0 = s0[ii],
+                                 beta = beta[ii], n = n[ii],
                                  ip_params = ip_params)
       res[ii] <- 1 - integrate_res$value
     }

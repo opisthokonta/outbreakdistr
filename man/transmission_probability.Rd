@@ -4,13 +4,10 @@
 \alias{transmission_probability}
 \title{Transmission probability for a stochastic SIR epidemic}
 \usage{
-transmission_probability(beta, s0, ip_model = "constant", ip_params = 1)
+transmission_probability(beta, n, ip_model = "constant", ip_params = 1)
 }
 \arguments{
 \item{beta}{Numeric vector. Transmission rate parameter(s).}
-
-\item{s0}{Numeric vector. Initial number of susceptibles. Must be the same
-length as \code{beta}.}
 
 \item{ip_model}{Character. Infectious period distribution: \code{"constant"},
 \code{"exponential"}, or \code{"gamma"}.}
@@ -18,6 +15,9 @@ length as \code{beta}.}
 \item{ip_params}{Numeric vector. Parameters for the infectious period
 distribution. One value for \code{"constant"} or \code{"exponential"} (the rate or
 duration); two values \verb{(shape, rate)} for \code{"gamma"}.}
+
+\item{s0}{Numeric vector. Initial number of susceptibles. Must be the same
+length as \code{beta}.}
 }
 \value{
 A numeric vector of the same length as \code{beta}, with each element
