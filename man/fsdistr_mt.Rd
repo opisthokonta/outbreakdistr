@@ -10,6 +10,7 @@ fsdistr_mt(
   beta,
   ip_model = "exponential",
   ip_params = list(1),
+  n_minus_1 = FALSE,
   return_df = FALSE,
   prec = NULL
 )

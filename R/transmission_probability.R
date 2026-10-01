@@ -26,6 +26,7 @@ intf_gamma <- function(x, beta, n, ip_params){
 #' @param ip_params Numeric vector. Parameters for the infectious period
 #'   distribution. One value for `"constant"` or `"exponential"` (the rate or
 #'   duration); two values `(shape, rate)` for `"gamma"`.
+#' @param n_minus_1. logical. If N-1 should be used in the calculation rather than N. Default is FALSE, meaning N is used.
 #'
 #' @return A numeric vector of the same length as `beta`, with each element
 #'   giving the transmission probability for the corresponding `beta` and `s0`
@@ -37,11 +38,15 @@ intf_gamma <- function(x, beta, n, ip_params){
 #' transmission_probability(beta = 1.1, s0 = 1, ip_model = "gamma", ip_params = c(2, 2))
 #'
 #' @export
-transmission_probability <- function(beta, n, ip_model = 'constant', ip_params = 1){
+transmission_probability <- function(beta, n, ip_model = 'constant', ip_params = 1, n_minus_1 = FALSE){
 
   stopifnot(length(beta) == length(n))
 
   res <- numeric(length(beta))
+
+  if (n_minus_1){
+    n <- n - 1
+  }
 
   for (ii in 1:length(beta)){
     if (ip_model == 'constant'){

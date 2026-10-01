@@ -40,7 +40,7 @@ get_state_table_idx <- function(sm, state) {
 # elements: what kind of transition matrix to return, either "probabilities" or "rates".
 #
 # To obtain the canonical form, pass statemat with absorbing states first.
-make_transition_matrix <- function(statemat, s0, beta, gamma, i0, beta0 = 0, cpi = 0, sparse = FALSE, elements = 'probabilities', model = 'sir') {
+make_transition_matrix <- function(statemat, s0, beta, gamma, i0, beta0 = 0, cpi = 0, n_minus_1 = FALSE, sparse = FALSE, elements = 'probabilities', model = 'sir') {
 
   if (model == 'sis' & elements == 'probabilities'){
     stop('Model SIS sohuld only be used with elements =  "rates".')
@@ -48,8 +48,13 @@ make_transition_matrix <- function(statemat, s0, beta, gamma, i0, beta0 = 0, cpi
 
   state_labels <- apply(statemat, MARGIN = 1, FUN = \(x) paste0(x, collapse = "-"))
 
-  #infection_rate <- (beta * statemat[, 1] * (statemat[, 2] / (s0 + i0 - 1) )) + (beta0 * statemat[, 1])
-  infection_rate <- (beta * statemat[, 1] * (statemat[, 2] / (s0 + i0) )) + (beta0 * statemat[, 1])
+  if (n_minus_1){
+    N <- s0 + i0 - 1
+  } else {
+    N <- s0 + i0
+  }
+
+  infection_rate <- (beta * statemat[, 1] * (statemat[, 2] / N)) + (beta0 * statemat[, 1])
   recovery_rate <- gamma * statemat[, 2]
 
   if (elements == 'probabilities'){
@@ -226,6 +231,8 @@ make_transition_matrix <- function(statemat, s0, beta, gamma, i0, beta0 = 0, cpi
 #'   recovery probability is proportional to `gamma * I`.
 #' @param time Positive numeric. The time to evaluate the the model, assuming an initial state at time 0 defined by `s0` and `i0`.
 #' @param beta0 Non-negative numeric. Rate of infection from outside the population.
+#' @param cpi Community probability of infection.
+#' @param n_minus_1. logical. If N-1 should be used in the force of infection rather than N. Default is FALSE, meaning N is used
 #' @param sparse Logical. If `TRUE` (default), use a sparse matrix
 #'   representation via the Matrix package; otherwise use a dense matrix.
 #'   Sparse matrices are faster for large populations.
@@ -254,7 +261,7 @@ make_transition_matrix <- function(statemat, s0, beta, gamma, i0, beta0 = 0, cpi
 #' res_dense <- emmdt(s0 = 10, i0 = 1, beta = 1.5, gamma = 1.0, sparse = FALSE)
 #'
 #' @export
-emmdt <- function(s0, i0, beta, gamma, beta0 = 0, cpi = 0, sparse = TRUE) {
+emmdt <- function(s0, i0, beta, gamma, beta0 = 0, cpi = 0, n_minus_1 = FALSE, sparse = TRUE) {
 
   stopifnot(
     length(s0) == 1,
@@ -264,7 +271,9 @@ emmdt <- function(s0, i0, beta, gamma, beta0 = 0, cpi = 0, sparse = TRUE) {
     i0 >= 0,
     beta >= 0,
     gamma >= 0,
-    is.logical(sparse)
+    is.logical(sparse),
+    length(n_minus_1) == 1,
+    is.logical(n_minus_1)
   )
 
   N <- s0 + i0
@@ -278,6 +287,7 @@ emmdt <- function(s0, i0, beta, gamma, beta0 = 0, cpi = 0, sparse = TRUE) {
     gamma = gamma,
     beta0 = beta0,
     cpi = cpi,
+    n_minus_1 = n_minus_1,
     sparse = sparse,
     elements = 'probabilities'
   )

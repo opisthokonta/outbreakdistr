@@ -4,7 +4,13 @@
 \alias{transmission_probability}
 \title{Transmission probability for a stochastic SIR epidemic}
 \usage{
-transmission_probability(beta, n, ip_model = "constant", ip_params = 1)
+transmission_probability(
+  beta,
+  n,
+  ip_model = "constant",
+  ip_params = 1,
+  n_minus_1 = FALSE
+)
 }
 \arguments{
 \item{beta}{Numeric vector. Transmission rate parameter(s).}
@@ -18,6 +24,8 @@ duration); two values \verb{(shape, rate)} for \code{"gamma"}.}
 
 \item{s0}{Numeric vector. Initial number of susceptibles. Must be the same
 length as \code{beta}.}
+
+\item{n_minus_1.}{logical. If N-1 should be used in the calculation rather than N. Default is FALSE, meaning N is used.}
 }
 \value{
 A numeric vector of the same length as \code{beta}, with each element

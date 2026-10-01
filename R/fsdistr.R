@@ -92,7 +92,7 @@ as_mpfr_list <- function(x, prec){
 
 
 
-fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf, prec = NULL) {
+fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf, n_minus_1 = FALSE, prec = NULL) {
   stopifnot(
     s0 > 0,
     length(s0) == 1,
@@ -106,7 +106,13 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf, prec
   )
 
   xmax <- min(s0, xmax)
-  N <- i0 + s0
+
+  if (n_minus_1){
+    N <- i0 + s0 - 1
+  } else {
+    N <- i0 + s0
+  }
+
 
   if (!is.null(prec)){
     beta <- Rmpfr::mpfr(beta, precBits = prec)
@@ -172,6 +178,7 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf, prec
 #' @param ip_params Numeric vector. Parameters for the infectious period
 #'   distribution. One value for `"constant"` or `"exponential"` (the rate or
 #'   duration); two values `(shape, rate)` for `"gamma"`.
+#' @param n_minus_1. logical. If N-1 should be used in the force of infection rather than N. Default is FALSE, meaning N is used.
 #' @param prec numeric. If multiple precision arithmetic should be used. By default R's built-in
 #' double precision arithmetic is used. Set this to 64 or greater to use greater precision for the underlying computation.
 #'
@@ -193,9 +200,12 @@ fsdistr_internal <- function(s0, i0, beta, ip_model, ip_params, xmax = Inf, prec
 #' fsdistr(s0 = 10, i0 = 1, beta = 1.4, ip_model = "constant", ip_params = 1 / 0.9)
 #'
 #' @export
-fsdistr <- function(s0, i0, beta, ip_model = "exponential", ip_params = 1, prec = NULL) {
+fsdistr <- function(s0, i0, beta, ip_model = "exponential", ip_params = 1, n_minus_1 = FALSE, prec = NULL) {
   validate_ip_model_params(model = ip_model, params = ip_params)
-  stopifnot(length(ip_model) == 1)
+  stopifnot(length(ip_model) == 1,
+            length(n_minus_1) == 1,
+            is.logical(n_minus_1))
+
 
   if (!is.null(prec)){
     stopifnot(is.numeric(prec),
@@ -204,7 +214,7 @@ fsdistr <- function(s0, i0, beta, ip_model = "exponential", ip_params = 1, prec 
 
   fsdistr_internal(
     s0 = s0, i0 = i0, beta = beta,
-    ip_model = ip_model, ip_params = ip_params,
+    ip_model = ip_model, ip_params = ip_params, n_minus_1 = n_minus_1,
     xmax = Inf, prec = prec
   )
 }
@@ -254,7 +264,7 @@ fsdistr <- function(s0, i0, beta, ip_model = "exponential", ip_params = 1, prec 
 #'
 #' @export
 fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
-                       ip_params = list(1), return_df = FALSE, prec = NULL) {
+                       ip_params = list(1), n_minus_1 = FALSE, return_df = FALSE, prec = NULL) {
   m <- length(s0)
 
   if (length(ip_model) == 1) {
@@ -291,6 +301,13 @@ fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
 
   s0_tot <- sum(s0)
   i0_tot <- sum(i0)
+
+  if (n_minus_1){
+    N_tot <- s0_tot + i0_tot - 1
+  } else {
+    N_tot <- s0_tot + i0_tot
+  }
+
 
   nstates <- prod(s0 + 1)
   statemat <- make_multitype_state_table(s0)
@@ -334,7 +351,7 @@ fsdistr_mt <- function(s0, i0, beta, ip_model = "exponential",
 
       prod_tmp <- 1
       for (ii in 1:m) {
-        mgf_eval_at <- sum((s0 - cur_state) * (beta[ii, ] / (s0_tot + i0_tot)))
+        mgf_eval_at <- sum((s0 - cur_state) * (beta[ii, ] / N_tot))
         mgf_res_tmp <- mgf(
           t = mgf_eval_at,
           params = ip_params[[ii]],

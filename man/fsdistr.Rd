@@ -4,7 +4,15 @@
 \alias{fsdistr}
 \title{Final size distribution for a single-type stochastic SIR epidemic}
 \usage{
-fsdistr(s0, i0, beta, ip_model = "exponential", ip_params = 1, prec = NULL)
+fsdistr(
+  s0,
+  i0,
+  beta,
+  ip_model = "exponential",
+  ip_params = 1,
+  n_minus_1 = FALSE,
+  prec = NULL
+)
 }
 \arguments{
 \item{s0}{Integer. Initial number of susceptibles (must be >= 1).}
@@ -22,6 +30,8 @@ duration); two values \verb{(shape, rate)} for \code{"gamma"}.}
 
 \item{prec}{numeric. If multiple precision arithmetic should be used. By default R's built-in
 double precision arithmetic is used. Set this to 64 or greater to use greater precision for the underlying computation.}
+
+\item{n_minus_1.}{logical. If N-1 should be used in the force of infection rather than N. Default is FALSE, meaning N is used.}
 }
 \value{
 A numeric vector of length \code{s0 + 1}. Element \code{k + 1} gives the
